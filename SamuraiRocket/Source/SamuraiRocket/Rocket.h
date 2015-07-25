@@ -12,22 +12,25 @@ class SAMURAIROCKET_API ARocket : public AActor
 protected:
 	/** Rocket's projectil movement component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	class UProjectileMovementComponent* _ProjectileComponent;
+		class UProjectileMovementComponent* _ProjectileComponent;
 
 	/** Rocket's mesh */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Mesh, meta = (AllowPrivateAccess = "true"))
-	class UStaticMeshComponent* _Mesh;
+		class UStaticMeshComponent* _Mesh;
 
 	/** Box collision of Rocket */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Collision, meta = (AllowPrivateAccess = "true"))
-	class UBoxComponent* _BoxCollider;
+		class UBoxComponent* _BoxCollider;
 
 	FVector _direction;
 
 public:
 	/** Start speed of Rockets */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
-	float	InitialSpeed;
+		float	InitialSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = FX)
+		class UClass*	ExplosionFX;
 	
 public:	
 	// Sets default values for this actor's properties
@@ -42,6 +45,6 @@ public:
 	void	SetDirection(FVector dir);
 
 	UFUNCTION(BlueprintCallable, Category = Collision)
-	void	OnHit(AActor *SelfActor, UPrimitiveComponent *OtherActor, FVector NormalImpulse, const FHitResult& Hit);
+		void	OnOverlapBegin(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	
 };

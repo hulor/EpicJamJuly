@@ -16,6 +16,8 @@ class ASamuraiRocketCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
 
+	FVector _lastDir;
+
 protected:
 
 	/** Called for side to side input */
@@ -25,6 +27,17 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 	// End of APawn interface
 
+	void Fire();
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Death)
+		class UClass*	DeathFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Fire)
+		class UClass*	RocketActor;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Fire)
+		class UChildActorComponent* FireMusle;
 
 public:
 	ASamuraiRocketCharacter();
@@ -33,4 +46,7 @@ public:
 	FORCEINLINE class UCameraComponent* GetSideViewCameraComponent() const { return SideViewCameraComponent; }
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+
+	UFUNCTION(BlueprintCallable, Category = Death)
+		void	Die();
 };

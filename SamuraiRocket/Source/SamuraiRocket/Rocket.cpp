@@ -2,6 +2,7 @@
 
 #include "SamuraiRocket.h"
 #include "Rocket.h"
+#include "SamuraiRocketCharacter.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 // Sets default values
@@ -12,6 +13,7 @@ ARocket::ARocket()
 
 	USceneComponent* root = CreateDefaultSubobject<USceneComponent>("Root");
 
+	RootComponent = root;
 	_ProjectileComponent = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectilMoveComponent");
 
 	_Mesh = CreateDefaultSubobject<UStaticMeshComponent>("Mesh");
@@ -22,16 +24,17 @@ ARocket::ARocket()
 	_BoxCollider->AttachParent = _Mesh;
 
 	InitialSpeed = 200.0f;
-
-	SetActorEnableCollision(true);
-	_Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	ExplosionFX = NULL;
 }
 
 // Called when the game starts or when spawned
 void ARocket::BeginPlay()
 {
 	Super::BeginPlay();
-	_Mesh->OnComponentHit.AddDynamic(this, &ARocket::OnHit);
+	/*TScriptDelegate<FWeakObjectPtr> delegBegin;
+
+	delegBegin.BindUFunction(this, FName("OnBeginOverlap"));
+	_BoxCollider->OnComponentBeginOverlap.Add(delegBegin);*/
 }
 
 // Called every frame
@@ -46,9 +49,21 @@ void	ARocket::SetDirection(FVector dir)
 	_ProjectileComponent->Velocity = dir * InitialSpeed;
 }
 
-void	ARocket::OnHit(AActor *SelfActor, UPrimitiveComponent *OtherActor, FVector NormalImpulse, const FHitResult& Hit)
+void	ARocket::OnOverlapBegin(AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	InitialSpeed = 0.0f;
+	ASamuraiRocketCharacter* target = Cast<ASamuraiRocketCharacter>(OtherActor);
+
+	if (target != NULL)
+	{
+		target->Die();
+	}
+	if (this->ExplosionFX != NULL)
+	{
+		FVector pos = this->GetActorLocation();
+		FRotator rot = this->GetActorRotation();
+
+		this->GetWorld()->SpawnActor(this->ExplosionFX, &pos, &rot);
+	}
 	this->Destroy();
 }
 
