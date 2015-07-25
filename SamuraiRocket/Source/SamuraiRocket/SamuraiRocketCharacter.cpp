@@ -33,7 +33,7 @@ ASamuraiRocketCharacter::ASamuraiRocketCharacter()
 
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Face in the direction we are moving..
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 1440.0f, 0.0f); // ...at this rotation rate
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 2000000.0f, 0.0f); // ...at this rotation rate
 	GetCharacterMovement()->GravityScale = 2.f;
 	GetCharacterMovement()->AirControl = 0.80f;
 	GetCharacterMovement()->JumpZVelocity = 1000.f;
@@ -46,10 +46,18 @@ ASamuraiRocketCharacter::ASamuraiRocketCharacter()
 
 	FireMusle = CreateDefaultSubobject<UChildActorComponent>("Musle");
 
+	_WallTrigger = CreateDefaultSubobject<UBoxComponent>("WallTrigger");
+
+	_WallTrigger->AttachParent = this->GetMesh();
+
 	FireMusle->AttachParent = this->GetMesh();
 	_lastDir = FVector::ZeroVector;
 	RocketActor = NULL;
 	DeathFX = NULL;
+	DodgeVelocity = 200.0f;
+	UpDodgeIntensity = 50.0f;
+	_isDodging = false;
+	_stun = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -62,35 +70,61 @@ void ASamuraiRocketCharacter::SetupPlayerInputComponent(class UInputComponent* I
 	InputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	InputComponent->BindAction("Fire", IE_Pressed, this, &ASamuraiRocketCharacter::Fire);
 	InputComponent->BindAxis("MoveRight", this, &ASamuraiRocketCharacter::MoveRight);
+	InputComponent->BindAxis("MoveUp", this, &ASamuraiRocketCharacter::MoveUp);
+}
+
+void ASamuraiRocketCharacter::Landed(const FHitResult & Hit)
+{
+	Super::Landed(Hit);
+	_isDodging = false;
 }
 
 void ASamuraiRocketCharacter::MoveRight(float Value)
 {
+	if (_stun == true)
+		return;
 	// add movement in that direction
 	AddMovementInput(FVector(0.f,-1.f,0.f), Value);
 
-	if (Value == 0.0f)
-		return;
-	_lastDir = FVector(0.f, -1.f, 0.f) * Value;
+	/*if (Value == 0.0f)
+		return;*/
+	_lastDir.Y = -Value;
 }
+
+void ASamuraiRocketCharacter::MoveUp(float Value)
+{
+	/*if (Value == 0.0f)
+		return;*/
+	_lastDir.Z = Value;
+}
+
 
 void	ASamuraiRocketCharacter::Fire()
 {
-	if (this->RocketActor != NULL)
+	if (this->RocketActor != NULL &&
+		_isDodging == false &&
+		_stun == false)
 	{
 		FVector pos = FireMusle->GetComponentLocation();
 		FRotator rot = FireMusle->GetComponentRotation();
+		rot = FVector(_lastDir.Z, _lastDir.Y, 0.0f).Rotation();
 		ARocket* rocket = Cast<ARocket>(this->GetWorld()->SpawnActor(this->RocketActor, &pos, &rot));
 
 		if (rocket == NULL)
 		{
 			return;
 		}
-		UE_LOG(LogMyCharacter, Log, TEXT("Spawn rocket"));
-		//if (_lastDir == FVector::ZeroVector)
-			rocket->SetDirection(this->GetMesh()->GetForwardVector());
-		/*else
-			rocket->SetDirection(_lastDir);*/
+		FVector direction = _lastDir;
+
+		if (direction == FVector::ZeroVector)
+			direction = this->GetActorForwardVector();
+		//UE_LOG(LogMyCharacter, Log, TEXT("Spawn rocket"));
+		direction.Normalize();
+		rocket->SetDirection(direction);
+
+		float upIntensity = FMath::Abs(FVector::DotProduct(direction, FVector(0.f, 1.f, 0.f))) * UpDodgeIntensity;
+		this->CharacterMovement->Launch(direction * DodgeVelocity + this->GetActorUpVector());
+		_isDodging = true;
 	}
 }
 
@@ -103,4 +137,15 @@ void	ASamuraiRocketCharacter::Die()
 
 		this->GetWorld()->SpawnActor(this->DeathFX, &pos, &rot);
 	}
+}
+
+void	ASamuraiRocketCharacter::OnWallOverlapBegin(AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (_isDodging == true)
+		_stun = true;
+}
+
+bool	ASamuraiRocketCharacter::IsDodging() const
+{
+	return (_isDodging);
 }

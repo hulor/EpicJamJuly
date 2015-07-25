@@ -31,10 +31,6 @@ ARocket::ARocket()
 void ARocket::BeginPlay()
 {
 	Super::BeginPlay();
-	/*TScriptDelegate<FWeakObjectPtr> delegBegin;
-
-	delegBegin.BindUFunction(this, FName("OnBeginOverlap"));
-	_BoxCollider->OnComponentBeginOverlap.Add(delegBegin);*/
 }
 
 // Called every frame
@@ -55,6 +51,8 @@ void	ARocket::OnOverlapBegin(AActor* OtherActor, UPrimitiveComponent* OtherComp,
 
 	if (target != NULL)
 	{
+		if (target->IsDodging() == true)
+			return;
 		target->Die();
 	}
 	if (this->ExplosionFX != NULL)
