@@ -1,0 +1,10 @@
+*/Saved/
+*/Binaries/
+*/Intermediate/
+*.sdf
+*.sln
+*.suo
+*.opensdf
+ProtoSliced/Config/DefaultEditorUserSettings.ini
+WindowsNoEditor/
+*.DS_Store
