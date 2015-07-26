@@ -12,3 +12,20 @@ void	UCustomBPLibrary::SetPlayerStateScore(APlayerState* ps, int32 score)
 	ps->Score = score;
 }
 
+void	UCustomBPLibrary::RemovePlayerController(APlayerController* pc)
+{
+	if (pc == NULL)
+	{
+		return;
+	}
+	UWorld* world = pc->GetWorld();
+
+	//pc->Destroy();
+	if (world != NULL &&
+		pc != NULL)
+	{
+		world->GetAuthGameMode()->RemovePlayerControllerFromPlayerCount(pc);
+		//world->RemoveController(pc);
+	}
+}
+

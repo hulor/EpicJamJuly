@@ -16,6 +16,7 @@ class SAMURAIROCKET_API UCustomBPLibrary : public UBlueprintFunctionLibrary
 public:
 	UFUNCTION(BlueprintCallable, Category = PlayerState)
 		static void	SetPlayerStateScore(class APlayerState* ps, int32 score);
-	
+	UFUNCTION(BlueprintCallable, Category = PlayerController)
+		static void RemovePlayerController(class APlayerController* pc);
 	
 };
