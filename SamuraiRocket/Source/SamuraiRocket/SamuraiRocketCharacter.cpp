@@ -221,7 +221,8 @@ void	ASamuraiRocketCharacter::OnWallOverlapBegin(AActor* OtherActor, UPrimitiveC
 		_wallActor = OtherActor;
 		if (GetCharacterMovement()->IsFalling() == true)
 		{
-			//this->SetActorRotation((this->GetActorLocation() - OtherActor->GetActorLocation()).Rotation());
+			FVector dir = (this->GetActorLocation() - OtherActor->GetActorLocation());
+			this->SetActorRotation((FVector::DotProduct(dir, FVector::RightVector) * FVector::RightVector).Rotation());
 		}
 		if (this->HasAuthority() == true)
 		{
@@ -280,6 +281,11 @@ void	ASamuraiRocketCharacter::OwnJump()
 	}
 	else
 	{
+		if (_hasWall == true)
+		{
+			FVector dir = (this->GetActorLocation() - _wall);
+			this->SetActorRotation((FVector::DotProduct(dir, FVector::RightVector) * FVector::RightVector).Rotation());
+		}
 		Jump();
 	}
 }
