@@ -122,11 +122,14 @@ void ASamuraiRocketCharacter::MoveUp(float Value)
 
 void	ASamuraiRocketCharacter::Fire()
 {
-	RocketFire(_lastDir);
 	// not server
 	if (Role < ROLE_Authority)
 	{
 		ServerFire(_lastDir);
+	}
+	else
+	{
+		RocketFire(_lastDir);
 	}
 }
 
