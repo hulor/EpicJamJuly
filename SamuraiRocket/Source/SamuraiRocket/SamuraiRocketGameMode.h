@@ -10,6 +10,8 @@ class ASamuraiRocketGameMode : public AGameMode
 
 public:
 	ASamuraiRocketGameMode();
+
+	void	RespawnPlayer(AController* pc);
 };
 
 

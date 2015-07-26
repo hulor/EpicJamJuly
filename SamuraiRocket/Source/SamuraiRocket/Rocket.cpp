@@ -4,6 +4,7 @@
 #include "Rocket.h"
 #include "SamuraiRocketCharacter.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "UnrealNetwork.h"
 
 // Sets default values
 ARocket::ARocket()
@@ -25,6 +26,13 @@ ARocket::ARocket()
 
 	InitialSpeed = 200.0f;
 	ExplosionFX = NULL;
+}
+
+void	ARocket::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ARocket, _direction);
 }
 
 // Called when the game starts or when spawned

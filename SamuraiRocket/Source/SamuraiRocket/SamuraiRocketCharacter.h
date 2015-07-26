@@ -22,12 +22,22 @@ class ASamuraiRocketCharacter : public ACharacter
 
 	FVector _lastDir;
 
-	class AActor*	_wall;
-	bool _stun;
-	bool _isDodging;
-	bool _wallJumpDone;
+	class AActor* _wallActor;
+
+	UPROPERTY(Replicated)
+		bool _hasWall;
+	UPROPERTY(Replicated)
+		FVector	_wall;
+	UPROPERTY(Replicated)
+		bool _stun;
+	UPROPERTY(Replicated)
+		bool _isDodging;
+	UPROPERTY(Replicated)
+		bool _wallJumpDone;
 
 protected:
+
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const override;
 
 	/** Called for side to side input */
 	void MoveRight(float Val);
@@ -41,6 +51,8 @@ protected:
 	virtual void Landed(const FHitResult & Hit) override;
 
 	void Fire();
+
+	void RocketFire(FVector dir);
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Death)
@@ -94,5 +106,19 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = Jump)
 		void	OwnJump();
+
+
+	// Network
+
+	// Fire
+	UFUNCTION(reliable, server, WithValidation)
+		void ServerFire(FVector dir);
+	virtual void ServerFire_Implementation(FVector dir);
+	virtual bool ServerFire_Validate(FVector dir);
+
+	UFUNCTION(reliable, server, WithValidation)
+		void	ServerWallJump(FVector dir);
+	virtual void ServerWallJump_Implementation(FVector dir);
+	virtual bool ServerWallJump_Validate(FVector dir);
 
 };

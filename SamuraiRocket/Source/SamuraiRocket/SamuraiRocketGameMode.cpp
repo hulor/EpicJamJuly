@@ -13,3 +13,14 @@ ASamuraiRocketGameMode::ASamuraiRocketGameMode()
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
 }
+
+void	ASamuraiRocketGameMode::RespawnPlayer(AController* pc)
+{
+	if (pc == NULL)
+		return;
+	APawn* pawn = this->SpawnDefaultPawnFor(pc, this->ChoosePlayerStart(pc));
+
+	if (pawn == NULL)
+		return;
+	pc->Possess(pawn);
+}

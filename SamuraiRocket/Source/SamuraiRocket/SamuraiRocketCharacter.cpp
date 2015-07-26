@@ -3,7 +3,10 @@
 #include "SamuraiRocket.h"
 #include "SamuraiRocketCharacter.h"
 #include "Rocket.h"
+#include "SamuraiRocketGameMode.h"
 #include "Runtime/Engine/Classes/Components/ChildActorComponent.h"
+#include "Runtime/Engine/Classes/GameFramework/PlayerState.h"
+#include "UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogMyCharacter, All, All);
 
@@ -60,7 +63,21 @@ ASamuraiRocketCharacter::ASamuraiRocketCharacter()
 	StunDuration = 1.0f;
 	_isDodging = false;
 	_stun = false;
-	_wall = NULL;
+	_hasWall = false;
+	_wallActor = NULL;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Networking
+void ASamuraiRocketCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASamuraiRocketCharacter, _wall);
+	DOREPLIFETIME(ASamuraiRocketCharacter, _hasWall);
+	DOREPLIFETIME(ASamuraiRocketCharacter, _isDodging);
+	DOREPLIFETIME(ASamuraiRocketCharacter, _stun);
+	DOREPLIFETIME(ASamuraiRocketCharacter, _wallJumpDone);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -105,20 +122,30 @@ void ASamuraiRocketCharacter::MoveUp(float Value)
 
 void	ASamuraiRocketCharacter::Fire()
 {
+	RocketFire(_lastDir);
+	// not server
+	if (Role < ROLE_Authority)
+	{
+		ServerFire(_lastDir);
+	}
+}
+
+void	ASamuraiRocketCharacter::RocketFire(FVector dir)
+{
 	if (this->RocketActor != NULL &&
 		_isDodging == false &&
 		_stun == false)
 	{
 		FVector pos = FireMusle->GetComponentLocation();
 		FRotator rot = FireMusle->GetComponentRotation();
-		rot = FVector(_lastDir.Z, _lastDir.Y, 0.0f).Rotation();
+		rot = FVector(dir.Z, dir.Y, 0.0f).Rotation();
 		ARocket* rocket = Cast<ARocket>(this->GetWorld()->SpawnActor(this->RocketActor, &pos, &rot));
 
 		if (rocket == NULL)
 		{
 			return;
 		}
-		FVector direction = _lastDir;
+		FVector direction = dir;
 
 		if (direction == FVector::ZeroVector)
 			direction = this->GetActorForwardVector();
@@ -127,10 +154,10 @@ void	ASamuraiRocketCharacter::Fire()
 		rocket->SetDirection(direction);
 
 		float upIntensity = FMath::Abs(FVector::DotProduct(direction, FVector(0.f, 1.f, 0.f))) * UpDodgeIntensity;
-		this->CharacterMovement->Launch(direction * DodgeVelocity + this->GetActorUpVector());
+		this->GetCharacterMovement()->Launch(direction * DodgeVelocity + this->GetActorUpVector());
 		GetWorld()->GetTimerManager().SetTimer(this, &ASamuraiRocketCharacter::EndDodge, DodgeDuration, false);
 		_isDodging = true;
-		if (_wall != NULL)
+		if (_hasWall == true)
 		{
 			Stun();
 		}
@@ -151,7 +178,7 @@ void	ASamuraiRocketCharacter::Stun()
 {
 	_stun = true;
 	_isDodging = false;
-	CharacterMovement->Velocity = FVector::ZeroVector;
+	GetCharacterMovement()->Velocity = FVector::ZeroVector;
 	GetWorld()->GetTimerManager().SetTimer(this, &ASamuraiRocketCharacter::UnStun, StunDuration, false);
 }
 
@@ -164,6 +191,14 @@ void	ASamuraiRocketCharacter::Die()
 
 		this->GetWorld()->SpawnActor(this->DeathFX, &pos, &rot);
 	}
+	if (this->HasAuthority() == false)
+		return;
+	ASamuraiRocketGameMode* gm = Cast<ASamuraiRocketGameMode>(this->GetWorld()->GetAuthGameMode());
+
+	if (gm == NULL)
+		return;
+	gm->RespawnPlayer(this->GetController());
+	this->Destroy();
 }
 
 void	ASamuraiRocketCharacter::OnWallOverlapBegin(AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -175,19 +210,27 @@ void	ASamuraiRocketCharacter::OnWallOverlapBegin(AActor* OtherActor, UPrimitiveC
 	if (OtherActor->ActorHasTag("Wall") == true ||
 		OtherComp->ComponentHasTag("Wall") == true)
 	{
-		_wall = OtherActor;
-		if (CharacterMovement->IsFalling() == true)
+		_wallActor = OtherActor;
+		if (GetCharacterMovement()->IsFalling() == true)
 		{
 			//this->SetActorRotation((this->GetActorLocation() - OtherActor->GetActorLocation()).Rotation());
 		}
-		_wallJumpDone = false;
+		if (this->HasAuthority() == true)
+		{
+			_wall = OtherActor->GetActorLocation();
+			_hasWall = true;
+			_wallJumpDone = false;
+		}
 	}
 }
 
 void	ASamuraiRocketCharacter::OnWallOverlapEnd(AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (OtherActor == _wall)
-		_wall = NULL;
+	if (OtherActor == _wallActor)
+	{
+		_wallActor = NULL;
+		_hasWall = false;
+	}
 }
 
 bool	ASamuraiRocketCharacter::IsDodging() const
@@ -199,21 +242,51 @@ void	ASamuraiRocketCharacter::OwnJump()
 {
 	if (_stun == true)
 		return;
-	if (CharacterMovement->IsFalling() == true &&
-		_wall != NULL &&
+	if (GetCharacterMovement()->IsFalling() == true &&
+		_hasWall == true &&
 		_wallJumpDone == false)
 	{
 		FVector jumpDir = FVector(0.f, 1.f, 0.f);
-		FVector playerWall = (this->GetActorLocation() - _wall->GetActorLocation());
+		FVector playerWall = (this->GetActorLocation() - _wall);
 
 		playerWall.Normalize();
 		jumpDir = jumpDir * FVector::DotProduct(playerWall, jumpDir) * WallJumpVelocity + FVector::UpVector * WallJumpZVelocity;
 
-		CharacterMovement->Launch(jumpDir);
+		GetCharacterMovement()->Launch(jumpDir);
+
+		if (Role < ROLE_Authority)
+		{
+			ServerWallJump(jumpDir);
+		}
 		_wallJumpDone = true;
 	}
 	else
 	{
 		Jump();
 	}
+}
+
+////////////////////////////////////////////
+// Network gameplay
+
+void ASamuraiRocketCharacter::ServerFire_Implementation(FVector dir)
+{
+	_lastDir = dir;
+	Fire();
+}
+
+bool ASamuraiRocketCharacter::ServerFire_Validate(FVector dir)
+{
+	return (true);
+}
+
+
+void ASamuraiRocketCharacter::ServerWallJump_Implementation(FVector dir)
+{
+	GetCharacterMovement()->Launch(dir);
+}
+
+bool ASamuraiRocketCharacter::ServerWallJump_Validate(FVector dir)
+{
+	return (true);
 }

@@ -22,7 +22,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Collision, meta = (AllowPrivateAccess = "true"))
 		class UBoxComponent* _BoxCollider;
 
-	FVector _direction;
+	UPROPERTY(Replicated)
+		FVector _direction;
 
 public:
 	/** Start speed of Rockets */
@@ -31,6 +32,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = FX)
 		class UClass*	ExplosionFX;
+
+protected:
+
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const override;
 	
 public:	
 	// Sets default values for this actor's properties
