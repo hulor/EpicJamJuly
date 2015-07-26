@@ -160,7 +160,8 @@ void	ASamuraiRocketCharacter::RocketFire(FVector dir)
 		rocket->SetDirection(direction);
 
 		float upIntensity = FMath::Abs(FVector::DotProduct(direction, FVector(0.f, 1.f, 0.f))) * UpDodgeIntensity;
-		this->GetCharacterMovement()->Launch(direction * DodgeVelocity + this->GetActorUpVector());
+		direction = direction * DodgeVelocity + FVector::UpVector * upIntensity;
+		this->GetCharacterMovement()->Launch(direction + this->GetActorUpVector());
 		GetWorld()->GetTimerManager().SetTimer(this, &ASamuraiRocketCharacter::EndDodge, DodgeDuration, false);
 		_isDodging = true;
 		if (_hasWall == true)
@@ -209,7 +210,8 @@ void	ASamuraiRocketCharacter::Die()
 
 void	ASamuraiRocketCharacter::OnWallOverlapBegin(AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (_isDodging == true)
+	if (_isDodging == true &&
+		this->HasAuthority() == true)
 	{
 		Stun();
 	}
@@ -242,6 +244,16 @@ void	ASamuraiRocketCharacter::OnWallOverlapEnd(AActor* OtherActor, UPrimitiveCom
 bool	ASamuraiRocketCharacter::IsDodging() const
 {
 	return (_isDodging);
+}
+
+bool	ASamuraiRocketCharacter::IsStun() const
+{
+	return (_stun);
+}
+
+bool	ASamuraiRocketCharacter::HasWall() const
+{
+	return (_hasWall);
 }
 
 void	ASamuraiRocketCharacter::OwnJump()

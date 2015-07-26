@@ -104,6 +104,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Dodge)
 		bool	IsDodging() const;
 
+	UFUNCTION(BlueprintCallable, Category = Stun)
+		bool	IsStun() const;
+
+	UFUNCTION(BlueprintCallable, Category = WallJump)
+		bool	HasWall() const;
+
 	UFUNCTION(BlueprintCallable, Category = Jump)
 		void	OwnJump();
 
