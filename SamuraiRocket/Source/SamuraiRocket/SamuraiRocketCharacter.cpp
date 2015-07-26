@@ -136,21 +136,24 @@ void	ASamuraiRocketCharacter::RocketFire(FVector dir)
 		_isDodging == false &&
 		_stun == false)
 	{
+		FVector direction = dir;
+
+		if (direction == FVector::ZeroVector)
+			direction = this->GetActorForwardVector();
+		direction.Normalize();
+
+
 		FVector pos = FireMusle->GetComponentLocation();
 		FRotator rot = FireMusle->GetComponentRotation();
-		rot = FVector(dir.Z, dir.Y, 0.0f).Rotation();
+		float angle = FVector::DotProduct(direction, FVector::ForwardVector) * FVector::DotProduct(FVector::CrossProduct(direction, FVector::ForwardVector), FVector::RightVector);
+		rot = FRotator::MakeFromEuler(FVector(FMath::RadiansToDegrees(angle), 0.f, 0.f));
 		ARocket* rocket = Cast<ARocket>(this->GetWorld()->SpawnActor(this->RocketActor, &pos, &rot));
 
 		if (rocket == NULL)
 		{
 			return;
 		}
-		FVector direction = dir;
-
-		if (direction == FVector::ZeroVector)
-			direction = this->GetActorForwardVector();
 		//UE_LOG(LogMyCharacter, Log, TEXT("Spawn rocket"));
-		direction.Normalize();
 		rocket->SetDirection(direction);
 
 		float upIntensity = FMath::Abs(FVector::DotProduct(direction, FVector(0.f, 1.f, 0.f))) * UpDodgeIntensity;
