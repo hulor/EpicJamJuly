@@ -20,12 +20,10 @@ void	UCustomBPLibrary::RemovePlayerController(APlayerController* pc)
 	}
 	UWorld* world = pc->GetWorld();
 
-	//pc->Destroy();
 	if (world != NULL &&
 		pc != NULL)
 	{
 		world->GetAuthGameMode()->RemovePlayerControllerFromPlayerCount(pc);
-		//world->RemoveController(pc);
 	}
 }
 
