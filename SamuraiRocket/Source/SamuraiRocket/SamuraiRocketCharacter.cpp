@@ -56,8 +56,11 @@ ASamuraiRocketCharacter::ASamuraiRocketCharacter()
 	DeathFX = NULL;
 	DodgeVelocity = 200.0f;
 	UpDodgeIntensity = 50.0f;
+	DodgeDuration = 1.5f;
+	StunDuration = 1.0f;
 	_isDodging = false;
 	_stun = false;
+	_wall = NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -66,7 +69,7 @@ ASamuraiRocketCharacter::ASamuraiRocketCharacter()
 void ASamuraiRocketCharacter::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 {
 	// set up gameplay key bindings
-	InputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	InputComponent->BindAction("Jump", IE_Pressed, this, &ASamuraiRocketCharacter::OwnJump);
 	InputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	InputComponent->BindAction("Fire", IE_Pressed, this, &ASamuraiRocketCharacter::Fire);
 	InputComponent->BindAxis("MoveRight", this, &ASamuraiRocketCharacter::MoveRight);
@@ -77,6 +80,7 @@ void ASamuraiRocketCharacter::Landed(const FHitResult & Hit)
 {
 	Super::Landed(Hit);
 	_isDodging = false;
+	_wallJumpDone = false;
 }
 
 void ASamuraiRocketCharacter::MoveRight(float Value)
@@ -124,8 +128,31 @@ void	ASamuraiRocketCharacter::Fire()
 
 		float upIntensity = FMath::Abs(FVector::DotProduct(direction, FVector(0.f, 1.f, 0.f))) * UpDodgeIntensity;
 		this->CharacterMovement->Launch(direction * DodgeVelocity + this->GetActorUpVector());
+		GetWorld()->GetTimerManager().SetTimer(this, &ASamuraiRocketCharacter::EndDodge, DodgeDuration, false);
 		_isDodging = true;
+		if (_wall != NULL)
+		{
+			Stun();
+		}
 	}
+}
+
+void	ASamuraiRocketCharacter::EndDodge()
+{
+	_isDodging = false;
+}
+
+void	ASamuraiRocketCharacter::UnStun()
+{
+	_stun = false;
+}
+
+void	ASamuraiRocketCharacter::Stun()
+{
+	_stun = true;
+	_isDodging = false;
+	CharacterMovement->Velocity = FVector::ZeroVector;
+	GetWorld()->GetTimerManager().SetTimer(this, &ASamuraiRocketCharacter::UnStun, StunDuration, false);
 }
 
 void	ASamuraiRocketCharacter::Die()
@@ -142,10 +169,51 @@ void	ASamuraiRocketCharacter::Die()
 void	ASamuraiRocketCharacter::OnWallOverlapBegin(AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (_isDodging == true)
-		_stun = true;
+	{
+		Stun();
+	}
+	if (OtherActor->ActorHasTag("Wall") == true ||
+		OtherComp->ComponentHasTag("Wall") == true)
+	{
+		_wall = OtherActor;
+		if (CharacterMovement->IsFalling() == true)
+		{
+			//this->SetActorRotation((this->GetActorLocation() - OtherActor->GetActorLocation()).Rotation());
+		}
+		_wallJumpDone = false;
+	}
+}
+
+void	ASamuraiRocketCharacter::OnWallOverlapEnd(AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (OtherActor == _wall)
+		_wall = NULL;
 }
 
 bool	ASamuraiRocketCharacter::IsDodging() const
 {
 	return (_isDodging);
+}
+
+void	ASamuraiRocketCharacter::OwnJump()
+{
+	if (_stun == true)
+		return;
+	if (CharacterMovement->IsFalling() == true &&
+		_wall != NULL &&
+		_wallJumpDone == false)
+	{
+		FVector jumpDir = FVector(0.f, 1.f, 0.f);
+		FVector playerWall = (this->GetActorLocation() - _wall->GetActorLocation());
+
+		playerWall.Normalize();
+		jumpDir = jumpDir * FVector::DotProduct(playerWall, jumpDir) * WallJumpVelocity + FVector::UpVector * WallJumpZVelocity;
+
+		CharacterMovement->Launch(jumpDir);
+		_wallJumpDone = true;
+	}
+	else
+	{
+		Jump();
+	}
 }
