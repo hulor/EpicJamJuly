@@ -12,6 +12,10 @@ public:
 	ASamuraiRocketGameMode();
 
 	void	RespawnPlayer(AController* pc);
+	virtual void PostLogin(APlayerController * NewPlayer) override;
+
+	UFUNCTION(BlueprintNativeEvent)
+		void GameEnded();
 };
 
 
