@@ -56,3 +56,8 @@ void	ASamuraiRocketGameMode::GameEnded_Implementation()
 	UE_LOG(LogGM, Log, TEXT("Game over."));
 
 }
+
+FVector	ASamuraiRocketGameMode::FindRespawnPoint(AController* pc)
+{
+	return (this->ChoosePlayerStart(pc)->GetActorLocation());
+}
