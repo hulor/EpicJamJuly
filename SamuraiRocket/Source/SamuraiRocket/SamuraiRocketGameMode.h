@@ -16,6 +16,9 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent)
 		void GameEnded();
+
+	UFUNCTION(BlueprintCallable, Category = Respawn)
+		FVector FindRespawnPoint(class AController* pc);
 };
 
 
