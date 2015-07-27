@@ -8,6 +8,9 @@ class ASamuraiRocketGameMode : public AGameMode
 {
 	GENERATED_BODY()
 
+private:
+	TMap<class AController*, USkeletalMesh*> _mapController;
+
 public:
 	ASamuraiRocketGameMode();
 
@@ -19,6 +22,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = Respawn)
 		FVector FindRespawnPoint(class AController* pc);
+
+	UFUNCTION(BlueprintCallable, Category = Respawn)
+		void	AddControllerSkeleton(class AController* pc, USkeletalMesh* skeleton);
 };
 
 

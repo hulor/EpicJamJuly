@@ -43,6 +43,12 @@ void	ASamuraiRocketGameMode::RespawnPlayer(AController* pc)
 		return;
 	pc->Possess(pawn);
 	pc->PlayerState->Score = pc->PlayerState->Score - 1;
+	ASamuraiRocketCharacter* src = Cast<ASamuraiRocketCharacter>(pawn);
+
+	if (src != NULL)
+	{
+		src->GetMesh()->SetSkeletalMesh(_mapController[pc]);
+	}
 }
 
 void	ASamuraiRocketGameMode::PostLogin(APlayerController * NewPlayer)
@@ -60,4 +66,9 @@ void	ASamuraiRocketGameMode::GameEnded_Implementation()
 FVector	ASamuraiRocketGameMode::FindRespawnPoint(AController* pc)
 {
 	return (this->ChoosePlayerStart(pc)->GetActorLocation());
+}
+
+void	ASamuraiRocketGameMode::AddControllerSkeleton(AController* pc, USkeletalMesh* skeleton)
+{
+	_mapController.Add(pc, skeleton);
 }
