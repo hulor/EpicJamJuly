@@ -6,6 +6,6 @@ public class SamuraiRocket : ModuleRules
 {
 	public SamuraiRocket(TargetInfo Target)
 	{
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "OnlineSubsystemNull" });
 	}
 }
