@@ -20,7 +20,9 @@ ASamuraiRocketGameMode::ASamuraiRocketGameMode()
 
 void	ASamuraiRocketGameMode::RespawnPlayer(AController* pc)
 {
-	if (pc == NULL || pc->PlayerState->Score <= -10)
+	if (pc == NULL)
+		return;
+	if (pc->PlayerState->Score <= -10)
 	{
 		int nbPlayer = 0;
 
@@ -41,6 +43,7 @@ void	ASamuraiRocketGameMode::RespawnPlayer(AController* pc)
 
 	if (pawn == NULL)
 		return;
+	pc->UnPossess();
 	pc->Possess(pawn);
 	pc->PlayerState->Score = pc->PlayerState->Score - 1;
 	ASamuraiRocketCharacter* src = Cast<ASamuraiRocketCharacter>(pawn);
